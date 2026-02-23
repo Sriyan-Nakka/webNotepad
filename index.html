@@ -6,6 +6,7 @@
     <meta name="author" content="Sai Sriyan Nakka" />
     <meta name="description" content="A simple Notepad Web App!" />
     <link rel="shortcut icon" href="favicon.png" type="image/png" />
+    <link rel="manifest" href="manifest.json" />
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <title>Web Notepad</title>
     <style>
@@ -135,6 +136,27 @@
         <p style="cursor: pointer">Save File</p>
       </div>
     </div>
+    <dialog id="saveDialog">
+      <form method="dialog">
+        <label>
+          <span style="margin-bottom: 10px">
+            File Name (include extension):
+          </span>
+          <br />
+          <input
+            type="text"
+            style="font-size: 1.3rem; width: 100%"
+            id="fileNameInput"
+            value="untitled.txt"
+          />
+        </label>
+
+        <menu style="display: flex; justify-content: flex-end; gap: 10px">
+          <button style="font-size: 1.3rem" value="cancel">Cancel</button>
+          <button style="font-size: 1.3rem" id="confirmSave">Save</button>
+        </menu>
+      </form>
+    </dialog>
     <footer>
       <a href="https://github.com/Sriyan-Nakka" target="_blank">
         <svg
@@ -162,7 +184,7 @@
       </a>
       <br />
       &copy; Copyright, Sai Sriyan Nakka 2025, All Rights Reserved.
-      <br />Version 1.0.0 <br />
+      <br />Version 1.1.0 <br />
     </footer>
   </body>
 </html>

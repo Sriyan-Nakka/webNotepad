@@ -2,69 +2,9 @@ document.addEventListener("keydown", function (e) {
   if (e.ctrlKey && e.key === "s") {
     e.preventDefault();
     console.log("Ctrl + S pressed!");
-    saveFile();
+    document.querySelector("#saveDialog").showModal();
   }
 });
-
-async function saveFile() {
-  try {
-    const content = document.getElementById("editor").value;
-
-    const handle = await window.showSaveFilePicker({
-      suggestedName: "untitled.txt",
-      types: [
-        {
-          description: "Text Files",
-          accept: {
-            "text/plain": [
-              ".txt",
-              ".log",
-              ".text",
-              ".md",
-              ".markdown",
-              ".html",
-              ".htm",
-              ".css",
-              ".js",
-              ".ts",
-              ".json",
-              ".xml",
-              ".svg",
-              ".yaml",
-              ".yml",
-              ".csv",
-              ".tsv",
-              ".ini",
-              ".env",
-              ".conf",
-              ".cfg",
-              ".py",
-              ".java",
-              ".c",
-              ".cpp",
-              ".cs",
-              ".php",
-              ".rb",
-              ".go",
-              ".rs",
-              ".swift",
-              ".sh",
-              ".bat",
-            ],
-          },
-        },
-      ],
-    });
-
-    const writable = await handle.createWritable();
-    await writable.write(content);
-    await writable.close();
-
-    console.log("File saved successfully!");
-  } catch (err) {
-    console.log("User cancelled or error:", err);
-  }
-}
 
 document.querySelector("#spellCheck").addEventListener("change", function () {
   document.getElementById("editor").spellcheck = this.checked;
@@ -98,8 +38,32 @@ toggleBtn.addEventListener("click", () => {
   }
 });
 
+document.querySelector("#confirmSave").addEventListener("click", (e) => {
+  e.preventDefault();
+
+  let fileName = fileNameInput.value.trim();
+
+  if (!fileName) {
+    fileName = "untitled.txt";
+  }
+
+  const content = editor.value;
+
+  const blob = new Blob([content], { type: "application/octet-stream" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  saveDialog.close();
+});
+
 document
   .querySelector("#infoBar > :last-child")
   .addEventListener("click", () => {
-    saveFile();
+    document.querySelector("#saveDialog").showModal();
   });
