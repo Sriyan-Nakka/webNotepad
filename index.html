@@ -88,11 +88,12 @@
         gap: 5px;
         font-size: 1.3rem;
         white-space: nowrap;
-        font-size: clamp(0.9rem, 2vw, 1.3rem);
+        font-size: clamp(0.8rem, 2vw, 1.3rem);
       }
-      #infoBar > :nth-last-child(2) {
+      #infoBar > :nth-last-child(3) {
         margin-left: auto;
       }
+      #infoBar > :nth-last-child(3),
       #infoBar > :nth-last-child(2),
       #infoBar > :nth-last-child(1) {
         color: light-dark(purple, lightblue);
@@ -128,14 +129,18 @@
       </main>
       <div id="infoBar">
         <p><span id="chars">0</span> Chars</p>
-        <p>
-          <input type="checkbox" name="spellCheck" id="spellCheck" /> Spell
-          Check
-        </p>
+        <label style="display: flex; align-items: center">
+          <p>
+            <input type="checkbox" name="spellCheck" id="spellCheck" />
+            <span> Spell Check </span>
+          </p>
+        </label>
+        <p style="cursor: pointer" id="openBtn">Open File</p>
         <p style="cursor: pointer" id="previewBtn">Preview Markdown</p>
         <p style="cursor: pointer">Save File</p>
       </div>
     </div>
+    <input type="file" id="fileOpener" hidden />
     <dialog id="saveDialog">
       <form method="dialog">
         <label>
@@ -184,7 +189,7 @@
       </a>
       <br />
       &copy; Copyright, Sai Sriyan Nakka 2025, All Rights Reserved.
-      <br />Version 1.1.0 <br />
+      <br />Version 1.2.0 <br />
     </footer>
   </body>
 </html>
