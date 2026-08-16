@@ -1,38 +1,93 @@
-// ================================
-// SHORTCUT: CTRL + S
-// ================================
-document.addEventListener("keydown", function (e) {
-  if (e.ctrlKey && e.key === "s") {
+document.addEventListener("keydown", async function (e) {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "s") {
     e.preventDefault();
-    document.querySelector("#saveDialog").showModal();
+    await saveAs();
+    return;
+  }
+
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    await save();
   }
 });
 
-// ================================
-// SPELLCHECK TOGGLE
-// ================================
-document.querySelector("#spellCheck").addEventListener("change", function () {
-  document.getElementById("editor").spellcheck = this.checked;
-});
-
-// ================================
-// CHARACTER COUNT (no spaces)
-// ================================
-document.getElementById("editor").addEventListener("input", function () {
-  document.getElementById("chars").innerText = this.value.replace(
-    /\s/g,
-    "",
-  ).length;
-});
-
-// ================================
-// MARKDOWN PREVIEW TOGGLE
-// ================================
 const editor = document.getElementById("editor");
-const preview = document.getElementById("preview");
-const toggleBtn = document.querySelector("#previewBtn");
+const toggleBtn = document.getElementById("previewBtn");
+const spellCheck = document.getElementById("spellCheck");
+const chars = document.getElementById("chars");
 
+const fileOpener = document.getElementById("fileOpener");
+const openBtn = document.getElementById("openBtn");
+
+const saveBtn = document.getElementById("saveBtn");
+const fileNameInput = document.getElementById("fileNameInput");
+
+let currentFileName = "untitled.txt";
+let fileHandle = null;
 let previewMode = false;
+let savedContent = null;
+let hasEdited = false;
+
+function updateSaveState() {
+  if (!hasEdited) {
+    fileNameInput.style.borderColor = "";
+    return;
+  }
+
+  const isSaved = savedContent !== null && editor.value === savedContent;
+
+  fileNameInput.style.borderColor = isSaved ? "green" : "gray";
+}
+
+window.addEventListener("beforeunload", function (e) {
+  if (hasEdited && editor.value !== savedContent) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+const preview = document.createElement("div");
+preview.id = "preview";
+preview.hidden = true;
+preview.style.flexGrow = 1;
+
+editor.parentElement.appendChild(preview);
+
+spellCheck.addEventListener("change", function () {
+  editor.spellcheck = this.checked;
+});
+
+function updateInfo() {
+  const text = editor.value;
+  const cursor = editor.selectionStart;
+
+  chars.innerText = text.replace(/\s/g, "").length;
+
+  const totalLines = text.split("\n").length;
+  const currentLine = text.slice(0, cursor).split("\n").length;
+
+  const lastNewline = text.lastIndexOf("\n", cursor - 1);
+  const currentColumn = cursor - lastNewline;
+
+  document.getElementById("lines").innerText = totalLines;
+  document.getElementById("line").innerText = currentLine;
+  document.getElementById("column").innerText = currentColumn;
+
+  if (previewMode) {
+    preview.innerHTML = marked.parse(text);
+  }
+
+  updateSaveState();
+}
+
+editor.addEventListener("input", () => {
+  hasEdited = true;
+  updateInfo();
+});
+
+editor.addEventListener("keyup", updateInfo);
+editor.addEventListener("click", updateInfo);
+editor.addEventListener("select", updateInfo);
 
 toggleBtn.addEventListener("click", () => {
   previewMode = !previewMode;
@@ -49,92 +104,175 @@ toggleBtn.addEventListener("click", () => {
   }
 });
 
-// ================================
-// FILE OPEN LOGIC
-// ================================
-const fileOpener = document.getElementById("fileOpener");
-const openBtn = document.getElementById("openBtn");
+openBtn.addEventListener("click", async () => {
+  if ("showOpenFilePicker" in window) {
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        multiple: false,
+        types: [
+          {
+            description: "Text Files",
+            accept: {
+              "text/plain": [".txt", ".md", ".markdown"],
+            },
+          },
+        ],
+      });
 
-const saveDialog = document.getElementById("saveDialog");
-const fileNameInput = document.getElementById("fileNameInput");
-const confirmSave = document.getElementById("confirmSave");
+      fileHandle = handle;
 
-let currentFileName = "untitled.txt";
+      const file = await fileHandle.getFile();
 
-openBtn.addEventListener("click", () => {
+      currentFileName = file.name;
+      fileNameInput.value = currentFileName;
+      editor.value = await file.text();
+
+      savedContent = editor.value;
+      hasEdited = true;
+
+      updateInfo();
+
+      if (previewMode) {
+        preview.innerHTML = marked.parse(editor.value);
+      }
+
+      return;
+    } catch (error) {
+      if (error.name === "AbortError") {
+        return;
+      }
+
+      console.error(error);
+    }
+  }
+
   fileOpener.click();
 });
 
-fileOpener.addEventListener("change", (e) => {
+fileOpener.addEventListener("change", async (e) => {
   const file = e.target.files[0];
+
   if (!file) return;
 
+  fileHandle = null;
   currentFileName = file.name;
   fileNameInput.value = currentFileName;
+  editor.value = await file.text();
 
-  const reader = new FileReader();
+  savedContent = editor.value;
+  hasEdited = true;
 
-  reader.onload = function (event) {
-    editor.value = event.target.result;
-    document.getElementById("chars").innerText = editor.value.replace(
-      /\s/g,
-      "",
-    ).length;
-  };
+  updateInfo();
 
-  reader.readAsText(file);
+  if (previewMode) {
+    preview.innerHTML = marked.parse(editor.value);
+  }
 
-  fileOpener.value = ""; // allow reopening same file
+  fileOpener.value = "";
 });
 
-// ================================
-// SAVE LOGIC (DIALOG CONFIRM)
-// ================================
-confirmSave.addEventListener("click", (e) => {
-  e.preventDefault();
+async function save() {
+  if (!fileHandle) {
+    await saveAs();
+    return;
+  }
 
+  try {
+    const writable = await fileHandle.createWritable();
+
+    await writable.write(editor.value);
+    await writable.close();
+
+    savedContent = editor.value;
+    hasEdited = true;
+
+    updateSaveState();
+  } catch (error) {
+    if (error.name === "NotAllowedError") {
+      fileHandle = null;
+      await saveAs();
+      return;
+    }
+
+    console.error(error);
+  }
+}
+
+async function saveAs() {
+  if (!("showSaveFilePicker" in window)) {
+    downloadFile();
+
+    savedContent = editor.value;
+    hasEdited = true;
+
+    updateSaveState();
+
+    return;
+  }
+
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: fileNameInput.value.trim() || "untitled.txt",
+
+      types: [
+        {
+          description: "Text Files",
+          accept: {
+            "text/plain": [".txt", ".md", ".markdown"],
+          },
+        },
+      ],
+    });
+
+    fileHandle = handle;
+
+    currentFileName = handle.name;
+    fileNameInput.value = currentFileName;
+
+    const writable = await fileHandle.createWritable();
+
+    await writable.write(editor.value);
+    await writable.close();
+
+    savedContent = editor.value;
+    hasEdited = true;
+
+    updateSaveState();
+  } catch (error) {
+    if (error.name === "AbortError") {
+      return;
+    }
+
+    console.error(error);
+  }
+}
+
+function downloadFile() {
   let fileName = fileNameInput.value.trim();
 
   if (!fileName) {
-    fileName = currentFileName;
+    fileName = "untitled.txt";
   }
 
-  const content = editor.value;
-
-  const blob = new Blob([content], {
-    type: "application/octet-stream",
+  const blob = new Blob([editor.value], {
+    type: "text/plain;charset=utf-8",
   });
 
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
+
   a.href = url;
   a.download = fileName;
+
+  document.body.appendChild(a);
   a.click();
+  a.remove();
 
   URL.revokeObjectURL(url);
 
-  currentFileName = fileName; // update if renamed
-  saveDialog.close();
-});
-
-// ================================
-// SAVE BUTTON CLICK
-// ================================
-document
-  .querySelector("#infoBar > :last-child")
-  .addEventListener("click", () => {
-    saveDialog.showModal();
-  });
-
-function isMobilePhone() {
-  return /iPhone|Android.+Mobile|Windows Phone/i.test(navigator.userAgent);
+  currentFileName = fileName;
 }
 
-if (isMobilePhone()) {
-  console.log("Phone user detected.");
-  const randNum = Math.floor(Math.random() * 2) + 1;
-  if (randNum === 1) {
-    alert("Landscape Mode is recommended for mobile devices");
-  }
-}
+saveBtn.addEventListener("click", save);
+
+updateInfo();
