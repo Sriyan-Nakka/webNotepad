@@ -11,6 +11,11 @@ document.addEventListener("keydown", async function (e) {
   }
 });
 
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+});
+
 const editor = document.getElementById("editor");
 const toggleBtn = document.getElementById("previewBtn");
 const spellCheck = document.getElementById("spellCheck");
@@ -93,7 +98,15 @@ toggleBtn.addEventListener("click", () => {
   previewMode = !previewMode;
 
   if (previewMode) {
-    preview.innerHTML = marked.parse(editor.value);
+    const html = marked.parse(editor.value);
+    const cleanHTML = DOMPurify.sanitize(html);
+
+    preview.innerHTML = cleanHTML;
+
+    preview.querySelectorAll("pre code").forEach((code) => {
+      hljs.highlightElement(code);
+    });
+
     editor.hidden = true;
     preview.hidden = false;
     toggleBtn.textContent = "Edit Mode";

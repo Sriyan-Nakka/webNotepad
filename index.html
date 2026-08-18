@@ -7,7 +7,10 @@
     <meta name="description" content="A simple Notepad Web App!" />
     <link rel="shortcut icon" href="favicon.png" type="image/png" />
     <link rel="manifest" href="manifest.json" />
-    <script src="marked.min.js"></script>
+    <script src="scripts/marked.min.js"></script>
+    <script src="scripts/purify.min.js"></script>
+    <script src="scripts/highlight.min.js"></script>
+    <link rel="stylesheet" href="highlight.css" />
     <title>Web Notepad</title>
     <style>
       @font-face {
@@ -66,7 +69,7 @@
         flex-direction: column;
         gap: 10px;
       }
-      h1 {
+      header h1 {
         font-size: 2.5rem;
         margin-top: 5px;
         margin-bottom: 10px;
@@ -81,7 +84,7 @@
         box-sizing: border-box;
         flex: 1;
         min-height: 0;
-        font-size: 1.6rem;
+        font-size: clamp(0.9rem, 2.2vw, 1.4rem);
         margin-top: 5px;
         font-family: EditorFont, monospace;
         padding: 10px;
@@ -104,11 +107,31 @@
         border-right: none;
       }
       #preview {
-        width: 99%;
+        width: 97%;
         height: 100%;
         overflow-y: auto;
-        font-size: 1.6rem;
+        font-size: clamp(0.9rem, 2.2vw, 1.4rem);
         border: 2px solid light-dark(black, white);
+        padding: 10px;
+        font-family: sans-serif;
+      }
+      #preview h1,
+      #preview h2,
+      #preview h3,
+      #preview h4,
+      #preview h5,
+      #preview h6 {
+        border-bottom: 1px solid light-dark(black, white);
+      }
+      #preview table {
+        box-sizing: border-box;
+        border-collapse: collapse;
+        border: 1px solid light-dark(black, white);
+      }
+      #preview table th,
+      #preview table td {
+        border: 1px solid light-dark(black, white);
+        padding: 5px;
       }
       #fileNameInput {
         font-size: 1.3rem;
@@ -150,7 +173,7 @@
     </style>
   </head>
   <body>
-    <script src="script.js" defer></script>
+    <script src="scripts/script.js" defer></script>
     <div id="fullContent">
       <header style="text-align: center">
         <h1>
@@ -220,7 +243,7 @@
       </a>
       <br />
       &copy; Copyright, Sai Sriyan Nakka 2025, All Rights Reserved.
-      <br />Version 2.0.2 <br />
+      <br />Version 2.1.0 <br />
     </footer>
   </body>
 </html>
